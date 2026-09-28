@@ -107,9 +107,7 @@ LEGO_LIBRARY=codeface_legacy LEGO_ALLOW_UNVALIDATED=1 \
 ```
 
 The archived 1,424 snippets preserve the earlier source text and manifest.
-The converted proxy records per-entry syntax status; the archive does not
-include carried validation tests. See
-[data/primitives_library/README.md](data/primitives_library/README.md).
+The converted proxy records per-entry syntax status.
 
 ## 3. Models
 
