@@ -1,0 +1,11 @@
+{
+  "corpus": "corpora/disjoint.txt",
+  "excluded": {
+    "target_name": 1,
+    "target_or_recorded_fork": 87,
+    "target_organization": 13
+  },
+  "input": 271,
+  "kept": 170,
+  "targets": 522
+}

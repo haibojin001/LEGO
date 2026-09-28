@@ -1,0 +1,124 @@
+# MINED PRIMITIVE (Focus 1 co-occurrence pipeline)
+# pid: python-datascience::pdg706::kubernetes.client.rest.ApiException+sematic.plugins.abstract_kuberay_wrapper.RayNodeConfig+sematic.plugins.abstract_kuberay_wrapper.SimpleRayCluster
+# name: kubernetes_sematic_primitive
+# summary: Uses kubernetes.client.rest.ApiException, sematic.plugins.abstract_kuberay_wrapper.RayNodeConfig, sematic.plugins.abstract_kuberay_wrapper.SimpleRayCluster, unittest.mock.MagicMock across 2 repos
+# anchor_symbols: ['kubernetes.client.rest.ApiException', 'sematic.plugins.abstract_kuberay_wrapper.RayNodeConfig', 'sematic.plugins.abstract_kuberay_wrapper.SimpleRayCluster', 'unittest.mock.MagicMock']
+# observed in 2 repos: ['run-house__kubetorch', 'sematic-ai__sematic']...
+
+# --- from run-house__kubetorch::services/kubetorch_controller/tests/test_routes.py::TestApplyRoute.test_apply_conflict_updates_existing_resource ---
+def test_apply_conflict_updates_existing_resource(self, client, mock_k8s_clients):
+        """Test that 409 conflict triggers an update instead of create."""
+        apps, core, custom = mock_k8s_clients
+
+        # First create raises 409 (already exists)
+        apps.create_namespaced_deployment.side_effect = ApiException(
+            status=409, reason="AlreadyExists"
+        )
+
+        # Mock the read and replace for update
+        mock_existing = MagicMock()
+        mock_existing.metadata.resource_version = "12345"
+        mock_existing.spec.selector.match_labels = {"app": "test"}
+        mock_existing.spec.selector.match_expressions = None
+        apps.read_namespaced_deployment.return_value = mock_existing
+        apps.replace_namespaced_deployment.return_value = mock_existing
+
+        body = {
+            "service_name": "existing-deployment",
+            "namespace": "default",
+            "resource_type": "deployment",
+            "resource_manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "Deployment",
+                "metadata": {"name": "existing-deployment"},
+                "spec": {"replicas": 2},
+            },
+        }
+
+        resp = client.post("/controller/apply", json=body)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "success"
+        assert data["message"] == "Resource updated"
+
+        apps.replace_namespaced_deployment.assert_called_once()
+
+# --- from sematic-ai__sematic::sematic/ee/plugins/external_resource/ray/tests/test_cluster.py::test_request_cluster ---
+def test_request_cluster(mock_get_run_ids, mock_get_run):
+    RayClusterClientsMocked.reset_mocks()
+    kuberay_version = "v0.4.0"
+    container_image_uri = "my_container_image_uri"
+    mock_get_run_ids.return_value = ["abc123"]
+    mock_get_run.return_value = MagicMock(container_image_uri=container_image_uri)
+    namespace = "test"
+
+    original_cluster = RayClusterClientsMocked(
+        config=SimpleRayCluster(n_nodes=1, node_config=RayNodeConfig(cpu=1, memory_gb=2)),
+        status=ResourceStatus(
+            state=ResourceState.CREATED,
+            message="fake message",
+            managed_by=ManagedBy.SERVER,
+        ),
+    )
+    cluster = original_cluster
+    cluster_name = f"ray-{cluster.id}"
+    cluster._cluster_api().create.return_value.metadata.name = cluster_name
+    cluster = cluster._request_cluster(kuberay_version, namespace)
+
+    cluster._cluster_api().create.assert_called()
+    assert cluster.status.state == ResourceState.ACTIVATING
+    manifest = cluster._cluster_api().create.call_args[0][0]
+    assert manifest["metadata"]["name"] == cluster_name
+
+    RayClusterClientsMocked.reset_mocks()
+    cluster = original_cluster
+    cluster._cluster_api().create.side_effect = ApiException(status=500)
+    cluster = cluster._request_cluster(kuberay_version, namespace)
+    assert cluster.status.state == ResourceState.DEACTIVATING
+    assert (
+        f"Deactivating cluster because 'Unable to request "
+        f"RayCluster with name '{cluster_name}': (500)"
+    ) in cluster.status.message
+
+# --- from sematic-ai__sematic::sematic/ee/plugins/external_resource/ray/tests/test_cluster.py::test_get_kuberay_version ---
+def test_get_kuberay_version():
+    RayClusterClientsMocked.reset_mocks()
+    fake_namespace = "fake_namespace"
+    cluster = RayClusterClientsMocked(
+        config=SimpleRayCluster(n_nodes=1, node_config=RayNodeConfig(cpu=1, memory_gb=2))
+    )
+    mock_api = cluster._apps_api()
+    mock_deployment_response = MagicMock(name="mock_deployment_response")
+    mock_api.read_namespaced_deployment.return_value = mock_deployment_response
+    mock_deployment_response.status.ready_replicas = 0
+
+    version, error = cluster._get_kuberay_version(fake_namespace)
+    assert version is None
+    assert error == (
+        "Kuberay has no ready replicas. Please ask your cluster administrator "
+        "to verify the health of Kuberay, and refer to Kuberay docs for "
+        "troubleshooting: https://ray-project.github.io/kuberay/"
+    )
+
+    mock_deployment_response.status.ready_replicas = 1
+    container1 = MagicMock()
+    container2 = MagicMock()
+
+    container1.name = "foo"
+    container1.image = "foo:v1.2.3"
+    container2.name = "kuberay-operator"
+    container2.image = "bar:v2.3.4"
+
+    mock_deployment_response.spec.template.spec.containers = [container1, container2]
+    version, error = cluster._get_kuberay_version(fake_namespace)
+    assert error is None
+    assert version == "v2.3.4"
+
+    mock_api.read_namespaced_deployment.side_effect = ApiException(status=404)
+    version, error = cluster._get_kuberay_version(fake_namespace)
+    assert version is None
+    assert error == (
+        "Kuberay does not appear to be installed in your Kubernetes "
+        "cluster. Please ask your cluster administrator to install it "
+        "in order to proceed."
+    )

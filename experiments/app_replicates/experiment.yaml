@@ -1,0 +1,28 @@
+name: app_replicates
+title: Replicate runs
+rq: Appendix
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: feedback_diag
+  display: Feedback + Diagnosis
+- config: rag_edit
+  display: RAG + Edit
+- config: lego_no_near_dup
+  display: LEGO, donor-disjoint
+- config: lego
+  display: LEGO
+prefixes:
+- display: Single-shot
+  of: Feedback
+  stages: '----'
+  budget: 1
+sweep:
+  replicate:
+  - 0
+  - 1
+  - 2
+tables:
+- type: main

@@ -1,0 +1,11 @@
+name: app_special_casing
+title: Test-targeted special-casing audit
+rq: Appendix
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+tables: []

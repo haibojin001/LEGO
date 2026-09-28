@@ -1,0 +1,17 @@
+name: rq1_single_pass
+title: Single pass vs. execution feedback
+rq: RQ1
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+prefixes:
+- display: Single-shot
+  of: Feedback
+  stages: '----'
+  budget: 1
+tables:
+- type: main
+- type: paired
+  ref: Single-shot

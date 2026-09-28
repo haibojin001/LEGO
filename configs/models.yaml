@@ -1,0 +1,38 @@
+# Model aliases used by experiments/*.yaml. Fill in the endpoint for each alias
+# you run; prices are the manuscript's recorded hosted rates on 2026-09-19
+# (USD per 1M tokens). Update them for a different deployment.
+#
+#   provider: openai_chat | openai_responses | anthropic | <module>:<Class>
+#   model_id: identifier sent to the endpoint
+#   base_url_env / api_key_env: environment variables holding endpoint and key
+#
+# Open-weight models can be served locally with any OpenAI-compatible server
+# (e.g. vLLM) and used through provider openai_chat.
+
+_openai: &openai
+  provider: openai_responses
+  base_url_env: OPENAI_BASE_URL
+  api_key_env: OPENAI_API_KEY
+_anthropic: &anthropic
+  provider: anthropic
+  api_key_env: ANTHROPIC_API_KEY
+_compat: &compat            # any OpenAI-compatible chat endpoint
+  provider: openai_chat
+  base_url_env: LEGO_COMPAT_BASE_URL
+  api_key_env: LEGO_COMPAT_API_KEY
+
+gpt-5.6-terra:     {<<: *openai, model_id: gpt-5.6-terra, price_in: 1.25, price_out: 10.00}
+gpt-5.6-luna:      {<<: *openai, model_id: gpt-5.6-luna, price_in: 0.60, price_out: 4.80}
+gpt-5.4:           {<<: *openai, model_id: gpt-5.4, price_in: 1.25, price_out: 10.00}
+claude-opus-5:     {<<: *anthropic, model_id: claude-opus-5, price_in: 5.00, price_out: 25.00}
+claude-sonnet-5:   {<<: *anthropic, model_id: claude-sonnet-5, price_in: 3.00, price_out: 15.00}
+claude-haiku-4.5:  {<<: *anthropic, model_id: claude-haiku-4-5, price_in: 1.00, price_out: 5.00}
+grok-4.3:          {<<: *compat, model_id: grok-4.3, price_in: 3.00, price_out: 15.00}
+gemma-4-31b:       {<<: *compat, model_id: gemma-4-31b, price_in: 0.20, price_out: 0.60}
+kimi-k2.5:         {<<: *compat, model_id: kimi-k2.5, price_in: 0.60, price_out: 2.50}
+qwen3-coder-480b:  {<<: *compat, model_id: qwen3-coder-480b-a35b-instruct, price_in: 0.45, price_out: 1.80}
+glm-5:             {<<: *compat, model_id: glm-5, price_in: 0.60, price_out: 2.20}
+deepseek-v3.2:     {<<: *compat, model_id: deepseek-v3.2, price_in: 0.28, price_out: 0.42}
+deepseek-v4:       {<<: *compat, model_id: deepseek-v4, price_in: 0.28, price_out: 0.42}
+nemotron-super-3-120b: {<<: *compat, model_id: nemotron-super-3-120b, price_in: 0.20, price_out: 0.80}
+gpt-oss-20b:       {<<: *compat, model_id: gpt-oss-20b, price_in: 0.05, price_out: 0.20}

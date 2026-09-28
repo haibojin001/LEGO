@@ -1,0 +1,16 @@
+name: app_band_sensitivity
+title: Difficulty-band sensitivity and scoring checks
+rq: Appendix
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+- config: feedback_diag
+  display: Feedback + Diagnosis
+tables:
+- type: paired
+  ref: Feedback
+  by_band: true

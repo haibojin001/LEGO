@@ -1,0 +1,20 @@
+name: rq3_ablation
+title: Construction-stage attribution
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: feedback_diag
+  display: + diagnosis
+- config: file_rag_edit
+  display: + File RAG, editing
+- config: rag_edit
+  display: + constructed primitives
+- config: lego
+  display: + primitive adaptation
+tables:
+- type: main
+- type: paired
+  ref: Feedback

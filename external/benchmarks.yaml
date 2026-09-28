@@ -1,0 +1,113 @@
+# Transfer benchmarks (external/run.py, external/filter_library.py,
+# external/coverage.py). Every value in angle brackets is a placeholder: point it
+# at the benchmark's own release, pinned, before anything runs. Nothing below
+# describes a release format; the generic loader is a template until `fields`
+# (or a custom `loader`) matches the actual release files. See external/README.md.
+#
+# Fields
+#   release_path         local checkout / unpacked release of the benchmark
+#   release_commit       the pinned release (recorded; not checked out for you)
+#   loader               generic | package.module:function  (function(spec) ->
+#                        list of dicts or ExternalTask)
+#   task_glob            (generic loader) glob under release_path matching one
+#                        task file (.json/.jsonl/.yaml) or one task directory
+#                        (holding task.json / task.yaml) per task
+#   fields               (generic loader) our key -> the release's key (dotted
+#                        paths allowed): name, spec, spec_file, workdir,
+#                        target_package, target_files, stubs, upstream_repo,
+#                        src_prefix, tests, original_sources, canonical_name,
+#                        forks, grader_cmd, feedback_cmd
+#   upstream_repos_file  one "task_name<TAB>repository URL" per line; used when
+#                        a task record does not name its upstream repository
+#   forks_file           optional; one "repository<TAB>fork" pair per line
+#   original_sources     path template of each target's original sources (for
+#                        the MinHash filter and the coverage audit only), with
+#                        {name} and {release_path}
+#   library              the filtered library (external.filter_library --out)
+#   env                  {venv: <path>} to use the benchmark's own environment,
+#                        or {requirements: [<file>, ...]} installed on top of a
+#                        fresh task environment (as lego.harness.prepare builds)
+#   feedback_cmd         test command a system may run during construction,
+#                        if the benchmark's protocol allows one; null = none.
+#                        Fields {workdir} {python} {tests}
+#   grader_cmd           the benchmark's official grading command, run
+#                        unmodified by the shell in release_path. Fields
+#                        {workdir} (the delivered tree) {task} {out} (a
+#                        directory for its output) {python} {release}
+#   grader_timeout       seconds
+#   metric               name of the benchmark's own metric
+#   metric_parse         {regex: <pattern whose first group is the value>} or
+#                        {json: <file under {out}>, key: <dotted key>}
+#   protocol             notes on the published protocol that the run follows
+
+repozero_py2py:
+  release_path: "<path to the RepoZero release>"
+  release_commit: "<pin>"
+  loader: generic
+  task_glob: "<glob selecting the Py->Py tasks>"
+  fields:
+    name: "<key>"
+    spec: "<key>"
+    workdir: "<key>"
+    target_package: "<key>"
+    upstream_repo: "<key>"
+  upstream_repos_file: "<path>"
+  forks_file: null
+  original_sources: "<path template, e.g. {release_path}/.../{name}>"
+  library: "<filtered library directory>"
+  env: {}
+  feedback_cmd: null
+  grader_cmd: "<official grading command>"
+  grader_timeout: 7200
+  metric: "<metric name>"
+  metric_parse: {regex: "<pattern>"}
+  protocol: |
+    <time / attempt limits, what the system may see and run, as published>
+
+repogenesis:
+  release_path: "<path to the RepoGenesis release>"
+  release_commit: "<pin>"
+  loader: generic
+  task_glob: "<glob>"
+  fields:
+    name: "<key>"
+    spec: "<key>"
+    workdir: "<key>"
+    target_package: "<key>"
+    upstream_repo: "<key>"
+  upstream_repos_file: "<path>"
+  forks_file: null
+  original_sources: "<path template>"
+  library: "<filtered library directory>"
+  env: {}
+  feedback_cmd: null
+  grader_cmd: "<official grading command>"
+  grader_timeout: 7200
+  metric: "<metric name>"
+  metric_parse: {regex: "<pattern>"}
+  protocol: |
+    <published protocol notes>
+
+repocraft:
+  release_path: "<path to the RepoCraft release>"
+  release_commit: "<pin>"
+  loader: generic
+  task_glob: "<glob>"
+  fields:
+    name: "<key>"
+    spec: "<key>"
+    workdir: "<key>"
+    target_package: "<key>"
+    upstream_repo: "<key>"
+  upstream_repos_file: "<path>"
+  forks_file: null
+  original_sources: "<path template>"
+  library: "<filtered library directory>"
+  env: {}
+  feedback_cmd: null
+  grader_cmd: "<official grading command>"
+  grader_timeout: 7200
+  metric: "<metric name>"
+  metric_parse: {regex: "<pattern>"}
+  protocol: |
+    <published protocol notes>

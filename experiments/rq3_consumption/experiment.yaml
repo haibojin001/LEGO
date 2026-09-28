@@ -1,0 +1,21 @@
+name: rq3_consumption
+title: How reused components are consumed
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback_diag
+  display: Feedback + Diagnosis
+- config: context_only
+  display: Context-only
+- config: import_call
+  display: Import + Call
+- config: structured_adapt
+  display: Structured-schema adaptation
+- config: lego
+  display: LEGO
+tables:
+- type: main
+- type: paired
+  ref: Feedback + Diagnosis
+  by_band: true

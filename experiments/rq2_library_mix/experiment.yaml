@@ -1,0 +1,34 @@
+name: rq2_library_mix
+title: Library source, size and retrieval depth
+rq: RQ2
+split: lego_repo_522
+shards: 32
+arms:
+- config: lego
+  display: LEGO
+- config: lego_mined_only
+  display: mined only
+- config: lego_mined_web
+  display: mined+web
+- config: lego_mined_harvested
+  display: mined+harvested
+- config: lego_web_only
+  display: web only
+- config: lego_harvested_only
+  display: harvested only
+- config: lego_half_s0
+  display: half s0
+- config: lego_half_s1
+  display: half s1
+- config: lego_half_s2
+  display: half s2
+- config: lego_m1
+  display: top-1
+- config: lego_m4
+  display: top-4
+- config: lego_m8
+  display: top-8
+tables:
+- type: main
+- type: paired
+  ref: LEGO

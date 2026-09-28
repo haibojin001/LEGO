@@ -1,0 +1,16 @@
+name: rq1_external_agents
+title: Independently developed repository agents
+rq: RQ1
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+tables:
+- type: main
+special:
+  kind: agents
+  model: gpt-5.6-terra
+  systems: [openhands, claude_code, swe_agent, agentless]

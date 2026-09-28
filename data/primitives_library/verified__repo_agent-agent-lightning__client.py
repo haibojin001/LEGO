@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+import time
+from typing import Any
+
+import httpx
+
+
+def _headers_with_key(
+    headers: httpx.Headers | dict[str, str] | None,
+    key: str | None,
+) -> dict[str, str]:
+    combined = dict(headers or {})
+    if key:
+        combined["Authorization"] = f"Bearer {key}"
+    return combined
+
+
+class AgentLightningAsyncClient(httpx.AsyncClient):
+    """Async httpx client with optional bearer key."""
+
+    def __init__(
+        self,
+        *,
+        key: str | None = None,
+        headers: httpx.Headers | dict[str, str] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(headers=_headers_with_key(headers, key), **kwargs)
+
+
+class AgentLightningSyncClient(httpx.Client):
+    """Sync httpx client with optional bearer key."""
+
+    def __init__(
+        self,
+        *,
+        key: str | None = None,
+        headers: httpx.Headers | dict[str, str] | None = None,
+        max_retries: int = 10,
+        **kwargs: Any,
+    ) -> None:
+        self.max_retries = max_retries
+        super().__init__(headers=_headers_with_key(headers, key), **kwargs)
+
+    def get(self, *args: Any, **kwargs: Any) -> httpx.Response:
+        error: Exception | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                return super().get(*args, **kwargs)
+            except Exception as exc:
+                error = exc
+                print(
+                    f"GET failed (attempt {attempt + 1}/{self.max_retries + 1}): {exc}"
+                )
+        assert error is not None
+        raise error
+
+    def post_with_retry(self, *args: Any, **kwargs: Any) -> httpx.Response:
+        """POST with retry + backoff, raising on non-2xx. Only for idempotent endpoints.
+
+        Retries both transport errors and error status codes, so a transient 5xx
+        is retried too. Callers get an already status-checked response back.
+        """
+        error: Exception | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = super().post(*args, **kwargs)
+                response.raise_for_status()
+                return response
+            except Exception as exc:
+                error = exc
+                print(
+                    f"POST failed (attempt {attempt + 1}/{self.max_retries + 1}): {exc}"
+                )
+                if attempt < self.max_retries:
+                    time.sleep(min(2 ** (attempt + 1), 30))
+        assert error is not None
+        raise error

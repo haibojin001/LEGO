@@ -1,0 +1,16 @@
+name: rq6_transfer
+title: Transfer to external benchmarks
+rq: RQ6
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+tables: []
+special:
+  kind: transfer
+  model: gpt-5.6-terra
+  benchmarks: [repozero_py2py, repogenesis, repocraft]
+  configs: [feedback, lego]

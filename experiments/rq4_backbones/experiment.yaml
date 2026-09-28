@@ -1,0 +1,33 @@
+name: rq4_backbones
+title: Backbone substitution
+rq: RQ4
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+  models:
+    resident: gpt-5.6-terra
+    diagnosis: gpt-5.6-terra
+sweep:
+  models.backbone:
+  - gpt-5.6-terra
+  - claude-sonnet-5
+  - gpt-5.4
+  - claude-opus-5
+  - gpt-5.6-luna
+  - grok-4.3
+  - claude-haiku-4.5
+  - gemma-4-31b
+  - kimi-k2.5
+  - qwen3-coder-480b
+  - glm-5
+  - deepseek-v3.2
+  - nemotron-super-3-120b
+tables:
+- type: pairs
+  a: LEGO
+  b: Feedback
+- type: main

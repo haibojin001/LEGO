@@ -1,0 +1,22 @@
+name: rq3_fields
+title: Primitive-field decomposition
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: rag_edit
+  display: RAG + Edit
+- config: rag_edit_V
+  display: + V_i
+- config: rag_edit_VIX
+  display: + I_i, X_i
+- config: rag_edit_VIXD
+  display: + D_i
+- config: lego_no_V
+  display: LEGO, V_i withheld
+- config: lego
+  display: LEGO
+tables:
+- type: main
+- type: paired
+  ref: RAG + Edit

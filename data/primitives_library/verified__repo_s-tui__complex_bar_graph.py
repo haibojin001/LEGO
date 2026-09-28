@@ -1,0 +1,194 @@
+import urwid
+
+
+class ScalableBarGraph(urwid.BarGraph):
+    """Scale the graph according to screen size."""
+
+    _size = (0, 0)
+
+    def render(self, size, focus=False):
+        canvas = super().render(size, focus)
+        new_size = (int(canvas.rows()), int(canvas.cols()))
+        old_size = self._size
+
+        if new_size != old_size:
+            self.on_resize(new_size)
+
+        self._size = new_size
+        return canvas
+
+    def calculate_bar_widths(self, size, bardata):
+        """
+        Return a list of bar widths, one for each bar in data.
+
+        If self.bar_width is None this implementation will stretch
+        the bars across the available space specified by maxcol.
+        """
+        maxcol, _ = size
+
+        if self.bar_width is not None:
+            return [
+                self.bar_width
+            ] * min(len(bardata), int(maxcol / self.bar_width))
+
+        if len(bardata) >= maxcol:
+            return [1] * maxcol
+
+        widths = []
+        grow = maxcol
+        remain = len(bardata)
+
+        for _ in bardata:
+            width = int(float(grow) / remain + 0.5)
+            widths.append(width)
+            grow -= width
+            remain -= 1
+
+        return widths
+
+    def get_size(self):
+        return self._size
+
+    def on_resize(self, new_size):
+        pass
+
+    @staticmethod
+    def _create_na_placeholder():
+        """Create a placeholder widget showing 'N/A' for unavailable sensors."""
+        na_text = urwid.Text("N/A", align="center")
+        na_filler = urwid.Filler(na_text, valign="middle")
+        return urwid.LineBox(na_filler)
+
+
+class LabeledBarGraphVector(urwid.WidgetPlaceholder):
+    """Add option to add labels for X and Y axes."""
+
+    def __init__(
+        self, title, sub_title_list, y_label, bar_graph_vector, visible_graph_list
+    ):
+        for bar_graph in bar_graph_vector:
+            if not isinstance(bar_graph, ScalableBarGraph):
+                raise Exception("graph vector items must be ScalableBarGraph")
+
+        if not self.check_label(y_label):
+            raise Exception("Y label must be a valid label")
+
+        self.visible_graph_list = visible_graph_list
+        self.smooth_mode = False
+        self.bar_graph_vector = []
+        self.set_graph(bar_graph_vector)
+
+        self.y_label_and_graphs = urwid.WidgetPlaceholder(urwid.Columns([]))
+        self.y_label = []
+        self.set_y_label(y_label)
+
+        list_w = urwid.ListBox(urwid.SimpleFocusListWalker([]))
+        self.title = urwid.WidgetPlaceholder(list_w)
+        self.sub_title_list = sub_title_list
+        self.set_title(title)
+
+        self.sensor_available = [True] * len(bar_graph_vector)
+
+        super().__init__(urwid.Pile([]))
+        self.set_visible_graphs(visible_graph_list)
+
+    def set_title(self, title):
+        if not title:
+            return
+
+        title_text_w = urwid.Text(title, align="center")
+        list_w = urwid.SimpleFocusListWalker([title_text_w])
+        self.title.original_widget = urwid.ListBox(list_w)
+
+    def set_y_label(self, y_label):
+        if not y_label:
+            text = urwid.Text("1")
+            pile = urwid.Pile([urwid.ListBox([text])])
+            self.y_label = ("fixed", 1, pile)
+            return
+
+        str_y_label = [str(item) for item in y_label]
+        y_label_nums = str_y_label[1:]
+        y_list_walker = [(1, urwid.ListBox([urwid.Text(str_y_label[0])]))]
+
+        for number in y_label_nums:
+            y_list_walker = [
+                urwid.ListBox([urwid.Text(number)]),
+                *y_list_walker,
+            ]
+
+        y_list_walker = urwid.Pile(y_list_walker, focus_item=0)
+        y_scale_len = len(max(str_y_label, key=len))
+
+        self.y_label = ("fixed", y_scale_len, y_list_walker)
+
+    def set_visible_graphs(self, visible_graph_list=None):
+        """Show a column of the graph selected for display."""
+        if visible_graph_list is None:
+            visible_graph_list = self.visible_graph_list
+
+        vline_char = "│" if self.smooth_mode else "|"
+        vline = urwid.AttrMap(urwid.SolidFill(vline_char), "line")
+
+        graph_vector_column_list = []
+        for idx, (state, graph, sub_title) in enumerate(
+            zip(
+                visible_graph_list,
+                self.bar_graph_vector,
+                self.sub_title_list,
+            )
+        ):
+            if state:
+                text_w = urwid.Text(sub_title, align="center")
+                sub_title_widget = urwid.ListBox([text_w])
+
+                if (
+                    idx < len(self.sensor_available)
+                    and not self.sensor_available[idx]
+                ):
+                    display_widget = ScalableBarGraph._create_na_placeholder()
+                else:
+                    display_widget = graph
+
+                graph_a = [
+                    ("fixed", 1, sub_title_widget),
+                    ("weight", 1, display_widget),
+                ]
+                graph_and_title = urwid.Pile(graph_a)
+                graph_vector_column_list.append(
+                    ("weight", 1, graph_and_title)
+                )
+                graph_vector_column_list.append(("fixed", 1, vline))
+
+        if not graph_vector_column_list:
+            self.visible_graph_list = visible_graph_list
+            self.original_widget = urwid.Pile([])
+            return
+
+        graph_vector_column_list.pop()
+
+        y_label_a = (
+            "weight",
+            1,
+            urwid.Columns(graph_vector_column_list),
+        )
+        y_label_and_graphs = [self.y_label, y_label_a]
+        column_w = urwid.Columns(y_label_and_graphs, dividechars=1)
+        y_label_and_graphs_widget = urwid.WidgetPlaceholder(column_w)
+
+        init_widget = urwid.Pile(
+            [
+                ("fixed", 1, self.title),
+                ("weight", 1, y_label_and_graphs_widget),
+            ]
+        )
+
+        self.visible_graph_list = visible_graph_list
+        self.original_widget = init_widget
+
+    def set_graph(self, graph_vector):
+        self.bar_graph_vector = graph_vector
+
+    @staticmethod
+    def check_label(label):
+        return (len(label) >= 2 and None not in label) or not label or label is None

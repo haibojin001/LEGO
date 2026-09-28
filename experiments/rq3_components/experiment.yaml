@@ -1,0 +1,22 @@
+name: rq3_components
+title: Component removals
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: lego
+  display: LEGO
+- config: retrieval_adapt
+  display: '- diagnosis'
+- config: retrieval_diag
+  display: '- adaptation'
+- config: feedback_diag
+  display: '- library'
+- config: lego_no_collab
+  display: '- collaboration (mu)'
+- config: lego_no_V
+  display: '- carried tests'
+tables:
+- type: main
+- type: paired
+  ref: LEGO

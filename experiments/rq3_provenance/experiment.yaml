@@ -1,0 +1,23 @@
+name: rq3_provenance
+title: Donor provenance and contamination control
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+- config: lego_no_same_repo
+  display: same-repository excluded
+- config: lego_no_same_org
+  display: same-organization excluded
+- config: lego_no_near_dup
+  display: + fork / near-duplicate excluded
+- config: lego_remined
+  display: re-mined disjoint library
+tables:
+- type: main
+- type: paired
+  ref: Feedback
+  by_band: true

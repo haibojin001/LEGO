@@ -1,0 +1,16 @@
+{
+  "manifest_entries": 1424,
+  "manifest_kinds": {
+    "unspecified": 57,
+    "mined": 319,
+    "verified": 1048
+  },
+  "source_repositories": 271,
+  "pinned_repositories": 271,
+  "unavailable_repositories": 0,
+  "unresolved_entries": 85,
+  "unresolved_reasons": {
+    "unknown_verified_task": 85
+  },
+  "corpus": "corpora/codeface_sources.txt"
+}

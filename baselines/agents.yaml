@@ -1,0 +1,109 @@
+# Command templates for the external repository agents (baselines/agents.py).
+#
+# Every system runs through its own released entry point, with its default
+# scaffolding, tool set and stopping rules: a template supplies only the
+# workspace, the instruction and the backbone. Values in angle brackets are
+# placeholders. EVERY command-line flag and environment variable below must be
+# verified against the pinned release before a run; entry points and flag names
+# change between releases, and nothing here has been checked against a pin.
+#
+# Template fields (str.format syntax; ${VAR} in env values expands from the
+# caller's environment):
+#   {repo}              the workspace tree the agent edits (DIR/repo)
+#   {instruction_file}  DIR/INSTRUCTION.md (instruct) or DIR/ISSUE.md (issue)
+#   {instruction}       the text of that file
+#   {model}             the --model alias
+#   {model_id}          the tool-specific id: models[alias] below, else model_id
+#                       from configs/models.yaml, else the alias
+#   {log_dir}           DIR/agent (stdout.log, stderr.log, agent.json, tool output)
+#   {timeout}           the wall-clock limit in seconds
+#   {task} {out}        the task name and the workspace directory DIR
+#
+# Keys per system (defaults below apply when a key is absent):
+#   version_pin   the pinned release; recorded with every task
+#   version_cmd   prints the installed version; recorded next to the pin
+#   mode          instruct: stub tree + INSTRUCTION.md
+#                 issue:    target modules absent + ISSUE.md
+#   runs_on       host:    DIR/env/bin is put first on PATH (private env copy)
+#                 sandbox: the tool provisions its own sandbox from {repo}
+#   cwd, cmd, env, stdin (instruction | null)
+#   delivery      tree:  the tool edits {repo} in place
+#                 patch: the tool writes a patch; the newest match of patch_glob
+#                        (a diff, or JSON with a `model_patch` field) is applied
+#                        to {repo} before grading
+#   usage_files   globs under {log_dir} holding JSON the usage parser reads
+#   models        alias -> tool-specific model id
+
+defaults:
+  timeout: 3600
+  runs_on: host
+  cwd: "{repo}"
+  stdin: null
+  delivery: tree
+  usage_files: []
+  models: {}
+
+systems:
+  openhands:
+    version_pin: "<OPENHANDS_VERSION>"
+    # verify: distribution name of the pinned release
+    version_cmd: ["python", "-c",
+                  "import importlib.metadata as m; print(m.version('openhands-ai'))"]
+    mode: instruct
+    runs_on: sandbox
+    # verify: headless entry point and the task-file flag of the pinned release
+    cmd: ["python", "-m", "openhands.core.main", "-f", "{instruction_file}"]
+    env:
+      # verify: variable names for the model, key and mounted workspace
+      LLM_MODEL: "{model_id}"
+      LLM_API_KEY: "${OPENHANDS_LLM_API_KEY}"
+      SANDBOX_VOLUMES: "{repo}:/workspace:rw"
+    usage_files: ["**/*.json"]
+    models: {}
+
+  claude_code:
+    version_pin: "<CLAUDE_CODE_VERSION>"
+    version_cmd: ["claude", "--version"]
+    mode: instruct
+    runs_on: host
+    # verify: print mode, JSON result on stdout, model flag, and the flag that
+    # disables interactive permission prompts in the pinned release
+    cmd: ["claude", "-p", "--output-format", "json", "--model", "{model_id}",
+          "--dangerously-skip-permissions"]
+    stdin: instruction
+    models: {}
+
+  swe_agent:
+    version_pin: "<SWE_AGENT_VERSION>"
+    # verify: how the pinned release reports its version
+    version_cmd: ["python", "-c", "import sweagent; print(sweagent.__version__)"]
+    mode: issue
+    runs_on: sandbox
+    # verify: sub-command and every option name against the pinned release
+    cmd: ["sweagent", "run",
+          "--agent.model.name={model_id}",
+          "--env.repo.path={repo}",
+          "--problem_statement.path={instruction_file}",
+          "--output_dir={log_dir}/sweagent"]
+    delivery: patch
+    # verify: where the pinned release writes the final patch / predictions
+    patch_glob: ["{log_dir}/sweagent/**/*.patch", "{log_dir}/sweagent/**/preds.json"]
+    usage_files: ["sweagent/**/*.traj"]
+    models: {}
+
+  agentless:
+    version_pin: "<AGENTLESS_COMMIT>"
+    version_cmd: ["git", "-C", "<AGENTLESS_CHECKOUT>", "rev-parse", "HEAD"]
+    mode: issue
+    runs_on: sandbox
+    # Agentless is released as a pipeline of stage scripts (localization,
+    # repair, patch selection) for issue benchmarks. <AGENTLESS_WRAPPER> is a
+    # script you provide that runs the released stages unchanged on a local
+    # repository ({repo}) and a local issue ({instruction_file}) and writes the
+    # selected patch under {log_dir}; see baselines/README.md.
+    cmd: ["bash", "<AGENTLESS_WRAPPER>", "{repo}", "{instruction_file}",
+          "{model_id}", "{log_dir}"]
+    delivery: patch
+    patch_glob: ["{log_dir}/**/*.patch", "{log_dir}/**/*.jsonl"]
+    usage_files: ["**/*.jsonl"]
+    models: {}

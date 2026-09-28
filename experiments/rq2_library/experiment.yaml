@@ -1,0 +1,12 @@
+name: rq2_library
+title: CodeFace reach and the runtime adaptation funnel
+rq: RQ2
+split: lego_repo_522
+shards: 32
+arms:
+- config: lego
+  display: LEGO
+tables:
+- type: funnel
+  arm: LEGO
+- type: main

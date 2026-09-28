@@ -1,0 +1,95 @@
+import random
+from collections import deque
+from datetime import timedelta
+
+from .timer import Timer
+
+
+class StatsClientBase:
+    """Base class shared by statsd client implementations."""
+
+    def close(self):
+        """Close and release any resources used by the client."""
+        raise NotImplementedError()
+
+    def _send(self):
+        raise NotImplementedError()
+
+    def pipeline(self):
+        raise NotImplementedError()
+
+    def timer(self, stat, rate=1):
+        return Timer(self, stat, rate)
+
+    def timing(self, stat, delta, rate=1):
+        if isinstance(delta, timedelta):
+            delta = delta.total_seconds() * 1000.0
+        self._send_stat(stat, "%0.6f|ms" % delta, rate)
+
+    def incr(self, stat, count=1, rate=1):
+        self._send_stat(stat, "%s|c" % count, rate)
+
+    def decr(self, stat, count=1, rate=1):
+        self.incr(stat, -count, rate)
+
+    def gauge(self, stat, value, rate=1, delta=False):
+        if value < 0 and not delta:
+            if rate < 1:
+                if random.random() > rate:
+                    return
+            with self.pipeline() as pipe:
+                pipe._send_stat(stat, "0|g", 1)
+                pipe._send_stat(stat, "%s|g" % value, 1)
+            return
+
+        sign = "+" if delta and value >= 0 else ""
+        self._send_stat(stat, "{}{}|g".format(sign, value), rate)
+
+    def set(self, stat, value, rate=1):
+        self._send_stat(stat, "%s|s" % value, rate)
+
+    def _send_stat(self, stat, value, rate):
+        self._after(self._prepare(stat, value, rate))
+
+    def _prepare(self, stat, value, rate):
+        if rate < 1:
+            if random.random() > rate:
+                return
+            value = "{}|@{}".format(value, rate)
+
+        if self._prefix:
+            stat = "{}.{}".format(self._prefix, stat)
+
+        return "{}:{}".format(stat, value)
+
+    def _after(self, data):
+        if data:
+            self._send(data)
+
+
+class PipelineBase(StatsClientBase):
+    def __init__(self, client):
+        self._client = client
+        self._prefix = client._prefix
+        self._stats = deque()
+
+    def _send(self):
+        raise NotImplementedError()
+
+    def _after(self, data):
+        if data is not None:
+            self._stats.append(data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, tb):
+        self.send()
+
+    def send(self):
+        if not self._stats:
+            return
+        self._send()
+
+    def pipeline(self):
+        return self.__class__(self)

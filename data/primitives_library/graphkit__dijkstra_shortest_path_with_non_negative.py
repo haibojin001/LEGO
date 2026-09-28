@@ -1,0 +1,163 @@
+def single_source_shortest_paths(
+    graph,
+    s,
+    d=None,
+    annex=None,
+    cost_func=None,
+    heuristic_func=None,
+    debug=False,
+) -> dict | tuple[dict, DebugInfo]:
+    """Find path from node ``s`` to all other nodes or just to ``d``.
+
+    ``graph``
+        An adjacency list that's structured as a dict of dicts (see
+        :class:`dijkstra.graph.Graph`). Other than the structure, no
+        other assumptions are made about the types of the nodes or edges
+        in the graph. If ``cost_func`` isn't specified, edges will be
+        assumed to be values that can be compared directly (e.g.,
+        numbers, or any other comparable type).
+
+    ``s``
+        Start node.
+
+    ``d``
+        Destination node. If ``d`` is not specified, the algorithm is
+        run normally (i.e., the paths from ``s`` to all reachable nodes
+        are found). If ``d`` is specified, the algorithm is stopped when
+        a path to ``d`` has been found.
+
+    ``annex``
+        Another graph that can be used to augment ``graph`` without
+        altering it.
+
+    ``cost_func``
+        A function to apply to each edge to modify its base cost. The
+        arguments it will be passed are the current node, a neighbor of
+        the current node, the edge that connects the current node to
+        that neighbor, and the edge that was previously traversed to
+        reach the current node.
+
+    ``heuristic_func``
+        A function to apply at each iteration to guide the algorithm
+        toward the destination (typically) instead of fanning out. It
+        gets passed the same args as ``cost_func``.
+
+    ``debug``
+        If set, return additional info that may be useful for debugging.
+
+    Returns
+        A predecessor map with the following form::
+
+            {v => (u, e, cost from v to u over e), ...}
+
+        If ``debug`` is set, additional debugging info will be returned
+        also. Currently, this info includes costs from ``s`` to reached
+        nodes and the set of visited nodes.
+
+    """
+    # Operate on the underlying data dict to potentially improve
+    # performance.
+    if ismethod(getattr(graph, "get_data", None)):
+        graph = graph.get_data()
+    if ismethod(getattr(annex, "get_data", None)):
+        annex = annex.get_data()
+
+    counter = count()
+
+    # Current known costs of paths from s to all nodes that have been
+    # reached so far. Note that "reached" is not the same as "visited".
+    costs = {s: 0}
+
+    # Predecessor map for each node that has been reached from ``s``.
+    # Keys are nodes that have been reached; values are tuples of
+    # predecessor node, edge traversed to reach predecessor node, and
+    # cost to traverse the edge from the predecessor node to the reached
+    # node.
+    predecessors = {s: (None, None, None)}
+
+    # A priority queue of nodes with known costs from s. The nodes in
+    # this queue are candidates for visitation. Nodes are added to this
+    # queue when they are reached (but only if they have not already
+    # been visited).
+    visit_queue = [(0, next(counter), s)]
+
+    # Nodes that have been visited. Once a node has been visited, it
+    # won't be visited again. Note that in this context "visited" means
+    # a node has been selected as having the lowest known cost (and it
+    # must have been "reached" to be selected).
+    visited = set()
+
+    while visit_queue:
+        # In the nodes remaining in the graph that have a known cost
+        # from s, find the node, u, that currently has the shortest path
+        # from s.
+        cost_of_s_to_u, _, u = heappop(visit_queue)
+
+        if u == d:
+            break
+
+        if u in visited:
+            # This will happen when u has been reached from multiple
+            # nodes before being visited (because multiple entries for
+            # u will have been added to the visit queue).
+            continue
+
+        visited.add(u)
+
+        if annex and u in annex and annex[u]:
+            neighbors = annex[u]
+        else:
+            neighbors = graph[u] if u in graph else {}
+
+        if not neighbors:
+            # u has no outgoing edges
+            continue
+
+        # The edge crossed to get to u
+        prev_e = predecessors[u][1]
+
+        # Check each of u's neighboring nodes to see if we can update
+        # its cost by reaching it from u.
+        for v in neighbors:
+            # Don't backtrack to nodes that have already been visited.
+            if v in visited:
+                continue
+
+            e = neighbors[v]
+
+            # Get the cost of the edge running from u to v.
+            cost_of_e = cost_func(u, v, e, prev_e) if cost_func else e
+
+            # Cost of s to u plus the cost of u to v across e--this
+            # is *a* cost from s to v that may or may not be less than
+            # the current known cost to v.
+            cost_of_s_to_u_plus_cost_of_e = cost_of_s_to_u + cost_of_e
+
+            # When there is a heuristic function, we use a guesstimated
+            # cost, which is the normal cost plus some other heuristic
+            # cost from v to d that is calculated to keep the algorithm
+            # moving in the right direction (generally more toward the
+            # goal instead of away from it).
+            if heuristic_func:
+                additional_cost = heuristic_func(u, v, e, prev_e)
+                cost_of_s_to_u_plus_cost_of_e += additional_cost
+
+            if v not in costs or costs[v] > cost_of_s_to_u_plus_cost_of_e:
+                # If the current known cost from s to v is greater than
+                # the cost of the path that was just found (cost of s to
+                # u plus cost of u to v across e), update v's cost in
+                # the cost list and update v's predecessor in the
+                # predecessor list (it's now u). Note that if ``v`` is
+                # not present in the ``costs`` list, its current cost
+                # is considered to be infinity.
+                costs[v] = cost_of_s_to_u_plus_cost_of_e
+                predecessors[v] = (u, e, cost_of_e)
+                heappush(visit_queue, (cost_of_s_to_u_plus_cost_of_e, next(counter), v))
+
+    if d is not None and d not in costs:
+        raise NoPathError("Could not find a path from {0} to {1}".format(s, d))
+
+    if debug:
+        return predecessors, DebugInfo(costs, visited)
+
+    return predecessors

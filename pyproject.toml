@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lego-repo"
+version = "0.1.0"
+description = "LEGO: repository construction with agent-native Code Primitives, and the LEGO-REPO benchmark"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6",
+    "openai>=1.40",
+    "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+embed = ["sentence-transformers>=3"]
+dev = ["pytest>=7", "pyflakes"]
+
+[tool.setuptools.packages.find]
+include = ["lego*", "baselines*", "external*"]
+
+[tool.setuptools.package-data]
+lego = ["prompts/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["tests/fixtures"]

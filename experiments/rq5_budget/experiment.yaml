@@ -1,0 +1,44 @@
+name: rq5_budget
+title: Attempt-budget ladder
+rq: RQ5
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: feedback
+  display: Feedback, b=8
+  budget: 8
+- config: lego
+  display: LEGO
+tables:
+- type: ladder
+  arm: Feedback
+  budgets:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+- type: ladder
+  arm: Feedback, b=8
+  budgets:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  name: ladder_b8
+- type: ladder
+  arm: LEGO
+  budgets:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  name: ladder_lego
+- type: cost

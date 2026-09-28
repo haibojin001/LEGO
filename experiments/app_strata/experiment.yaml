@@ -1,0 +1,17 @@
+name: app_strata
+title: Contamination strata (star count)
+rq: Appendix
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: lego
+  display: LEGO
+tables:
+- type: paired
+  ref: Feedback
+  splits:
+  - stars_ge10k
+  - stars_3k_10k
+  - stars_1k_3k

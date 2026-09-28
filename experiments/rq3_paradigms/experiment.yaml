@@ -1,0 +1,40 @@
+name: rq3_paradigms
+title: Construction paradigms
+rq: RQ3
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Feedback
+- config: retrieval_feedback
+  display: Retrieval + Feedback
+- config: feedback_diag
+  display: Feedback + Diagnosis
+- config: retrieval_diag
+  display: Retrieval + Diagnosis
+- config: retrieval_adapt
+  display: Retrieval + Adapt
+- config: rag_edit
+  display: RAG + Edit
+- config: lego
+  display: LEGO
+prefixes:
+- display: Single-shot
+  of: Feedback
+  stages: '----'
+  budget: 1
+- display: Retrieval, one attempt
+  of: Retrieval + Feedback
+  stages: R---
+  budget: 1
+tables:
+- type: main
+- type: paired
+  ref: Feedback
+  by_band: true
+- type: paired
+  ref: Feedback + Diagnosis
+  by_band: true
+  name: paired_vs_fbdiag
+- type: domains
+- type: cost

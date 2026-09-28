@@ -1,0 +1,11 @@
+name: codeface_harvest_seed
+title: Independent construction pass for CodeFace harvesting
+rq: Artifact
+split: lego_repo_522
+shards: 32
+arms:
+- config: feedback
+  display: Donor construction
+  replicate: 99
+tables:
+- type: main
