@@ -5,9 +5,6 @@ Code Primitives*: the **LEGO** construction pipeline, the **CodeFace** library o
 Code Primitives (and the pipeline that mines it), the **LEGO-REPO** benchmark
 harness, and one runnable definition per experiment.
 
-This repository contains code and run instructions only. It ships no result
-numbers; every table is produced from the records your runs write.
-
 ```
 lego/            the package
   harness/       clone, per-task environment, native-suite execution, provenance,
