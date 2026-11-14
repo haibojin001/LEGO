@@ -60,6 +60,9 @@ python benchmark/export_inventory.py       # rebuild the 522-row CSV
 python tools/audit_tasks_security.py      # held-repository and content audit
 ```
 
+Tasks built from repositories created after the GPT-5.6-terra knowledge cutoff, used in the contamination
+analysis, are listed in [benchmark/post_cutoff/](benchmark/post_cutoff/README.md).
+
 To rebuild task directories from scratch (clone, environment, identity ceiling,
 empty-package floor; no model calls): `python -m lego.bench_build --cards
 benchmark/metadata.jsonl --out benchmark/tasks`.
