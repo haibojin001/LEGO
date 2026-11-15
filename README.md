@@ -136,10 +136,3 @@ python -m lego.run --config lego --split dev_25 --backbone gpt-5.6-terra
 python -m lego.run --config feedback --split lego_repo_522 --shard 3 --nshards 32
 python -m lego.run --config lego --print-arm        # resolved config and arm id
 ```
-
-## License
-
-Benchmark tasks and CodeFace entries are derived from third-party repositories
-and remain under their upstream licenses; provenance (repository, commit,
-paths, license) is recorded for every task and primitive. The authors should
-set the release license before publication.
